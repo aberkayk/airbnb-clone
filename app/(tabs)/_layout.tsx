@@ -19,8 +19,8 @@ const Layout = () => {
         name="index"
         options={{
           tabBarLabel: "Explore",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" color={color} size={size} />
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="search" size={size} color={color} />
           ),
         }}
       />

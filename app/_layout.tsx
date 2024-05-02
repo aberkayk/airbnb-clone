@@ -1,10 +1,35 @@
 import { useFonts } from "expo-font";
 import { Stack, useRouter } from "expo-router";
 import { useEffect } from "react";
-import { useColorScheme } from "@/components/useColorScheme";
-import * as SplashScreen from "expo-splash-screen";
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as SplashScreen from "expo-splash-screen";
+import * as SecureStore from "expo-secure-store";
+import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
+
+const EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY =
+  process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+const tokenCache = {
+  async getToken(key: string): Promise<string | null> {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (error) {
+      // Handle the error appropriately, for example:
+      console.error("Failed to get token:", error);
+      return null; // Or throw error, depending on your use case
+    }
+  },
+  async saveToken(key: string, value: string): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch (error) {
+      // Handle the error appropriately, for example:
+      console.error("Failed to save token:", error);
+      throw error; // Or return a specific value to indicate failure
+    }
+  },
+};
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -41,12 +66,25 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <ClerkProvider
+      publishableKey={EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+      tokenCache={tokenCache}
+    >
+      <RootLayoutNav />
+    </ClerkProvider>
+  );
 }
 
 function RootLayoutNav() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
+  const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/(modals)/login");
+    }
+  }, [isLoaded]);
 
   return (
     <Stack>
@@ -65,8 +103,8 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
-        name="listing/[id].tsx"
-        options={{ headerTitle: "" }}
+        name="listing/[id]"
+        options={{ headerTitle: "", headerTransparent: true }}
       />
       <Stack.Screen
         name="(modals)/booking"
